@@ -70,7 +70,7 @@ func (s *SSHServer) handleRequests(reqs <-chan *ssh.Request) {
 	}
 }
 
-// Start assigns a pseudo-terminal tty os.File to c.Stdin, c.Stdout,
+// PtyRun Start assigns a pseudo-terminal tty os.File to c.Stdin, c.Stdout,
 // and c.Stderr, calls c.Start, and returns the File of the tty's
 // corresponding pty.
 func PtyRun(c *exec.Cmd, tty *os.File) (err error) {
@@ -125,7 +125,7 @@ func (s *SSHServer) handleChannels(chans <-chan ssh.NewChannel) {
 				switch req.Type {
 				case "exec":
 					ok = true
-					command := string(req.Payload[4 : req.Payload[3]+4])
+					command := string(req.Payload[4:])
 					cmd := exec.Command(shell, []string{"-c", command}...)
 
 					cmd.Stdout = channel
