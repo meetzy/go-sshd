@@ -1,4 +1,4 @@
-module go-sshd
+module github.com/meetzy/go-sshd
 
 go 1.14
 

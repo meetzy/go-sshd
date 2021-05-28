@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"strconv"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -23,24 +24,24 @@ var (
 )
 
 type SSHServer struct {
-	port         string
-	address      string
-	server       *ssh.ServerConfig
-	hostKey      []byte
-	enableSftp   bool
-	readOnlySftp bool
+	Port         int
+	Address      string
+	Server       *ssh.ServerConfig
+	HostKey      []byte
+	EnableSftp   bool
+	ReadOnlySftp bool
 }
 
 func (s *SSHServer) Start() {
 
 	// Once a ServerConfig has been configured, connections can be accepted.
-	listener, err := net.Listen("tcp4", s.address+":"+s.port)
+	listener, err := net.Listen("tcp4", s.Address+":"+strconv.Itoa(s.Port))
 	if err != nil {
-		log.Fatalf("failed to listen on %s:%s", s.address, s.port)
+		log.Fatalf("failed to listen on %s:%d", s.Address, s.Port)
 	}
 
 	// Accept all connections
-	log.Printf("listening on %s:%s", s.address, s.port)
+	log.Printf("listening on %s:%d", s.Address, s.Port)
 	for {
 		tcpConn, err := listener.Accept()
 		if err != nil {
@@ -48,7 +49,7 @@ func (s *SSHServer) Start() {
 			continue
 		}
 		// Before use, a handshake must be performed on the incoming net.Conn.
-		sshConn, chans, reqs, err := ssh.NewServerConn(tcpConn, s.server)
+		sshConn, chans, reqs, err := ssh.NewServerConn(tcpConn, s.Server)
 		if err != nil {
 			log.Printf("failed to handshake (%s)", err)
 			continue
@@ -193,7 +194,7 @@ func (s *SSHServer) handleChannels(chans <-chan ssh.NewChannel) {
 				case "subsystem":
 					log.Printf("subsystem: %s\n", req.Payload[4:])
 					if string(req.Payload[4:]) == "sftp" {
-						if s.enableSftp {
+						if s.EnableSftp {
 							ok = true
 							go s.startSftp(channel)
 						}
@@ -215,7 +216,7 @@ func (s *SSHServer) startSftp(channel ssh.Channel) {
 		sftp.WithDebug(os.Stderr),
 	}
 
-	if s.readOnlySftp {
+	if s.ReadOnlySftp {
 		serverOptions = append(serverOptions, sftp.ReadOnly())
 	} else {
 		log.Print("Read write server")
